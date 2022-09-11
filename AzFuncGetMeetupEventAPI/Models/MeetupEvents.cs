@@ -23,5 +23,20 @@ namespace AzFuncGetMeetupEventAPI.Models
 
         public string Url { get; set; } = default!;
 
+        /// <summary>
+        /// Meetup event Img
+        /// </summary>
+        public string EventImgUri { get; set; }
+
+        /// <summary>
+        /// Meetup address, if exist
+        /// </summary>
+        public string EventLocation { get; set; }
+
+        /// <summary>
+        /// Link (google maps or other) if exist
+        /// </summary>
+        public string EventLocationLink { get; set; }
+
     }
 }

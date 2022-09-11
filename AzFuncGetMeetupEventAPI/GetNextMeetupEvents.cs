@@ -80,7 +80,9 @@ namespace MeetupEventsAggregator.AzFunction
             if (!String.IsNullOrWhiteSpace(meetup))
                 meetupQuery = meetupQuery.Where(e => e.Community == meetup);
 
-            meetupQuery = meetupQuery.OrderByDescending(e => e.EventDate)
+            meetupQuery = meetupQuery
+                .Where(e => e.EventDate >= DateTime.Now)
+                .OrderBy(e => e.EventDate)
                 .Take(limit);
 
             return meetupQuery.ToList();

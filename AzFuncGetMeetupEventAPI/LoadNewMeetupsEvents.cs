@@ -2,10 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.ServiceModel.Syndication;
+using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using AngleSharp;
+using AngleSharp.Html.Dom;
+using AngleSharp.Io;
 using AzFuncGetMeetupEventAPI.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
@@ -17,16 +24,17 @@ namespace MeetupEventsAggregator.AzFunction
     public class LoadNewMeetupsEvents
     {
         private readonly ILogger<LoadNewMeetupsEvents> _logger;
-        private readonly IConfiguration _configuration;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
-        public LoadNewMeetupsEvents(ILogger<LoadNewMeetupsEvents> log, IConfiguration configuration)
+        public LoadNewMeetupsEvents(ILogger<LoadNewMeetupsEvents> log, Microsoft.Extensions.Configuration.IConfiguration configuration)
         {
             _logger = log;
             _configuration = configuration;
         }
 
         [FunctionName("LoadNewMeetupsEvents")]
-        public async Task RunAsync([TimerTrigger("0 */5 * * * *")]TimerInfo myTimer, ILogger log)
+        //public async Task RunAsync([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("0 * * * * *")]TimerInfo myTimer, ILogger log)
         {
             if (myTimer is null)
             {
@@ -140,7 +148,32 @@ namespace MeetupEventsAggregator.AzFunction
 
                 if (matchs.Success && matchs.Groups.Count == 2)
                 {
+                    string eventLocation = null;
                     var capturedId = matchs.Groups[1].Value;
+
+                    HttpClient client = new HttpClient();
+                    var response = await client.GetAsync(item.Id);
+                    var pageContents = await response.Content.ReadAsStringAsync();
+
+                    //var img = Regex.Match(pageContents, "<meta property=\"og: image\" content=\"(.*?)\".*?\\/>").Groups[1];
+
+                    //We can have all we want as info here
+                    //var matchingJson = Regex.Match(pageContents, "<script type=\"application\\/ld\\+json\">(.*?\"@type\":\"Event\".*?)<\\/script>");
+                    var matchingJson = Regex.Matches(pageContents, "<script type=\"application\\/ld\\+json\">(.*?)<\\/script>");
+                    var eventJson = matchingJson.Where(m => m.Groups[1].Value.Contains("\"@type\":\"Event\"")).First().Groups[1].Value;
+
+                    using var jsonDocument = JsonDocument.Parse(eventJson);
+
+                    var rootElement = jsonDocument.RootElement;
+                    var imgJsonElement = rootElement.GetProperty("image");
+                    var locationJsonElement = rootElement.GetProperty("location");
+                    var addressJsonElement = locationJsonElement.GetProperty("address");
+
+                    JsonElement streetAddressJsonElement;
+                    if(addressJsonElement.TryGetProperty("streetAddress", out streetAddressJsonElement))
+                    {
+                        eventLocation = streetAddressJsonElement.GetString();
+                    }
 
                     meetupEvent = new MeetupEvent
                     {
@@ -149,12 +182,14 @@ namespace MeetupEventsAggregator.AzFunction
                         Title = item.Title.Text,
                         Url = item.Id,
                         PubDate = item.PublishDate.UtcDateTime,
-                        EventDate = date
+                        EventDate = date,
+                        EventImgUri = imgJsonElement.GetString(),
+                        EventLocation = eventLocation
                     };
 
                     try
                     {
-                        _ = await meetupEventsContainer.UpsertItemAsync(meetupEvent);
+                        var upsertState = await meetupEventsContainer.UpsertItemAsync(meetupEvent);
                     }
                     catch (Exception ex)
                     {
@@ -178,6 +213,5 @@ namespace MeetupEventsAggregator.AzFunction
         }
 
         #endregion
-
     }
 }
