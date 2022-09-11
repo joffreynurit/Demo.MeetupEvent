@@ -7,19 +7,27 @@ window.addEventListener("load", () => {
 
             result.forEach(event => 
             { 
-                var html = "<div>";
+                var html = "<div class='row'>";
+                
+                //For test purpose
+                //html += "<div>Communauté : "+JSON.stringify(event)+"</div>";
 
-                html += "<div>Communauté : "+JSON.stringify(event)+"</div>";
-                html += "<div>Communauté : "+event.community+"</div>";
-                html += "<div>Id : "+event.id+"</div>";
+                //Col 1 -> image
+                html += "<div class='col'><div><a href='"+event.url+"'><img src='"+event.eventImgUri+"'/></a></div></div>";
+
+                //Col 2 -> infos
+                html += "<div class='col'>";
+                html += "<table>";
+                html += "<div>Titre : <span class='event-title'><a href='"+event.url+"'>"+event.title+"</a></span></div>";
+                html += "<div>Proposé par : <span>"+event.community+"</span></div>";
                 html += "<div>Date : "+new Date(event.eventDate).toLocaleDateString()+"</div>";
-                html += "<div>Titre : "+event.title+"</div>";
-                html += "<div>Url : "+event.url+"</div>"; 
-                html += "<div>Img : <img src='"+event.eventImgUri+"'/></div>";
                 if(event.eventLocation != null)
                 {
-                    html += "<div>Location : "+event.eventLocation+"</div>";
+                    html += "<div>Lieu : "+event.eventLocation+"</div>";
                 }
+
+                html += "</table>";
+                html += "</div>";
 
                 html += "</div><hr/>";
 
