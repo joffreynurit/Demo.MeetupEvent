@@ -167,18 +167,24 @@ namespace MeetupEventsAggregator.AzFunction
                     var rootElement = jsonDocument.RootElement;
                     var imgJsonElement = rootElement.GetProperty("image");
                     var locationJsonElement = rootElement.GetProperty("location");
-                    var addressJsonElement = locationJsonElement.GetProperty("address");
+                    var isOnline = locationJsonElement.GetProperty("@type").GetString() == "VirtualLocation";
 
+                    JsonElement addressJsonElement;
                     JsonElement streetAddressJsonElement;
-                    if(addressJsonElement.TryGetProperty("streetAddress", out streetAddressJsonElement))
+
+                    if (locationJsonElement.TryGetProperty("address", out addressJsonElement))
                     {
-                        eventLocation = streetAddressJsonElement.GetString();
+                        if (addressJsonElement.TryGetProperty("streetAddress", out streetAddressJsonElement))
+                        {
+                            eventLocation = streetAddressJsonElement.GetString();
+                        }
                     }
 
                     meetupEvent = new MeetupEvent
                     {
                         Id = capturedId,
                         Community = community,
+                        Online = isOnline,
                         Title = item.Title.Text,
                         Url = item.Id,
                         PubDate = item.PublishDate.UtcDateTime,

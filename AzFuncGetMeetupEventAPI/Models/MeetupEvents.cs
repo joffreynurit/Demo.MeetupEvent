@@ -16,6 +16,8 @@ namespace AzFuncGetMeetupEventAPI.Models
 
         public string Title { get; set; } = default!;
 
+        public bool Online { get; set; } = false;
+
         public DateTime PubDate { get; set; }
 
         // TODO : gérer la date de l'évènement
