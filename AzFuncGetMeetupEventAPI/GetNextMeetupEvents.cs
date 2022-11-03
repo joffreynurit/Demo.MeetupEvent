@@ -54,14 +54,12 @@ namespace MeetupEventsAggregator.AzFunction
             if(!string.IsNullOrWhiteSpace(limitStr))
                 _ = int.TryParse(limitStr, out limit);
 
-            meetupEvents = await GetLastEvents(limit, meetup);
+            meetupEvents = await GetNextEvents(limit, meetup);
 
             return new OkObjectResult(meetupEvents);
         }
 
-
-
-        private async Task<List<MeetupEvent>> GetLastEvents(int limit = 10, string meetup = "")
+        private async Task<List<MeetupEvent>> GetNextEvents(int limit = 10, string meetup = "")
         {
             if(limit <= 0)
                 limit = 10;

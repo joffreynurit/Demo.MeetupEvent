@@ -33,8 +33,7 @@ namespace MeetupEventsAggregator.AzFunction
         }
 
         [FunctionName("LoadNewMeetupsEvents")]
-        //public async Task RunAsync([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
-        public async Task RunAsync([TimerTrigger("0 * * * * *")]TimerInfo myTimer, ILogger log)
+        public async Task RunAsync([TimerTrigger("0 */30 * * * *")]TimerInfo myTimer, ILogger log)
         {
             if (myTimer is null)
             {
@@ -43,8 +42,6 @@ namespace MeetupEventsAggregator.AzFunction
 
             try
             {
-                //return FeedloadingService.Feeds.Take(limit);
-
                 using CosmosClient client = new(
                     accountEndpoint: _configuration.GetConnectionStringOrSetting("COSMOS_ENDPOINT")!,
                     authKeyOrResourceToken: _configuration.GetConnectionStringOrSetting("COSMOS_KEY")!
@@ -117,8 +114,6 @@ namespace MeetupEventsAggregator.AzFunction
         }
 
         #region Feed
-
-
 
         private async Task LoadAsync(Container meetupEventsContainer, string feedUrl)
         {
