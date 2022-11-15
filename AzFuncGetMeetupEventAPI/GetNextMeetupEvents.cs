@@ -16,6 +16,7 @@ using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Azure.Cosmos;
 using AzFuncGetMeetupEventAPI.Models;
+using AzFuncGetMeetupEventAPI.Helpers;
 
 namespace MeetupEventsAggregator.AzFunction
 {
@@ -54,15 +55,6 @@ namespace MeetupEventsAggregator.AzFunction
             if(!string.IsNullOrWhiteSpace(limitStr))
                 _ = int.TryParse(limitStr, out limit);
 
-            meetupEvents = await GetNextEvents(limit, meetup);
-
-            return new OkObjectResult(meetupEvents);
-        }
-
-        private async Task<List<MeetupEvent>> GetNextEvents(int limit = 10, string meetup = "")
-        {
-            if(limit <= 0)
-                limit = 10;
 
             using CosmosClient client = new(
                 accountEndpoint: _configuration.GetConnectionStringOrSetting("COSMOS_ENDPOINT")!,
@@ -73,17 +65,9 @@ namespace MeetupEventsAggregator.AzFunction
 
             var meetupEventsContainer = db.GetContainer("meetup_events");
 
-            IQueryable<MeetupEvent> meetupQuery = meetupEventsContainer.GetItemLinqQueryable<MeetupEvent>(true);
+            meetupEvents = await CosmoMeetupHelper.GetNextEvents(meetupEventsContainer, limit, meetup);
 
-            if (!String.IsNullOrWhiteSpace(meetup))
-                meetupQuery = meetupQuery.Where(e => e.Community == meetup);
-
-            meetupQuery = meetupQuery
-                .Where(e => e.EventDate >= DateTime.Now)
-                .OrderBy(e => e.EventDate)
-                .Take(limit);
-
-            return meetupQuery.ToList();
+            return new OkObjectResult(meetupEvents);
         }
     }
 }

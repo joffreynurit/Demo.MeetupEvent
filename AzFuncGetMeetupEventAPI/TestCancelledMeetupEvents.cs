@@ -13,6 +13,7 @@ using System.Xml;
 using AngleSharp;
 using AngleSharp.Html.Dom;
 using AngleSharp.Io;
+using AzFuncGetMeetupEventAPI.Helpers;
 using AzFuncGetMeetupEventAPI.Models;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Azure.WebJobs;
@@ -53,8 +54,7 @@ namespace MeetupEventsAggregator.AzFunction
 
                 var meetupEventsContainer = db.GetContainer("meetup_events");
 
-                var meetupEvents = await GetNextEvents();
-
+                var meetupEvents = await CosmoMeetupHelper.GetNextEvents(meetupEventsContainer);
 
                 foreach(var meetup in meetupEvents)
                 {
@@ -89,34 +89,6 @@ namespace MeetupEventsAggregator.AzFunction
             {
                 log.LogError(e.Message);
             }
-        }
-
-
-        private async Task<List<MeetupEvent>> GetNextEvents(int limit = 10, string meetup = "")
-        {
-            if (limit <= 0)
-                limit = 10;
-
-            using CosmosClient client = new(
-                accountEndpoint: _configuration.GetConnectionStringOrSetting("COSMOS_ENDPOINT")!,
-                authKeyOrResourceToken: _configuration.GetConnectionStringOrSetting("COSMOS_KEY")!
-            );
-
-            var db = client.GetDatabase("MtgFranceDb");
-
-            var meetupEventsContainer = db.GetContainer("meetup_events");
-
-            IQueryable<MeetupEvent> meetupQuery = meetupEventsContainer.GetItemLinqQueryable<MeetupEvent>(true);
-
-            if (!String.IsNullOrWhiteSpace(meetup))
-                meetupQuery = meetupQuery.Where(e => e.Community == meetup);
-
-            meetupQuery = meetupQuery
-                .Where(e => e.EventDate >= DateTime.Now)
-                .OrderBy(e => e.EventDate)
-                .Take(limit);
-
-            return meetupQuery.ToList();
         }
     }
 }
