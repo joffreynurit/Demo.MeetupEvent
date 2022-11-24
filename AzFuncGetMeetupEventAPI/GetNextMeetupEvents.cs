@@ -17,6 +17,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Azure.Cosmos;
 using AzFuncGetMeetupEventAPI.Models;
 using AzFuncGetMeetupEventAPI.Helpers;
+using System.Diagnostics;
 
 namespace MeetupEventsAggregator.AzFunction
 {
@@ -55,7 +56,7 @@ namespace MeetupEventsAggregator.AzFunction
             if(!string.IsNullOrWhiteSpace(limitStr))
                 _ = int.TryParse(limitStr, out limit);
 
-
+            Stopwatch stopWatch = Stopwatch.StartNew();
             using CosmosClient client = new(
                 accountEndpoint: _configuration.GetConnectionStringOrSetting("COSMOS_ENDPOINT")!,
                 authKeyOrResourceToken: _configuration.GetConnectionStringOrSetting("COSMOS_KEY")!
@@ -64,8 +65,14 @@ namespace MeetupEventsAggregator.AzFunction
             var db = client.GetDatabase("MtgFranceDb");
 
             var meetupEventsContainer = db.GetContainer("meetup_events");
+            _logger.LogMetric("Cosmo DB Client init", stopWatch.ElapsedMilliseconds);
 
             meetupEvents = await CosmoMeetupHelper.GetNextEvents(meetupEventsContainer, limit, meetup);
+            _logger.LogMetric("Get Next meetup duration", stopWatch.ElapsedMilliseconds);
+
+            stopWatch.Stop();
+
+            _logger.LogInformation(10200, $"We load {meetupEvents.Count()} events");
 
             return new OkObjectResult(meetupEvents);
         }

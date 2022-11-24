@@ -82,6 +82,8 @@ namespace MeetupEventsAggregator.AzFunction
                         try
                         {
                             var upsertState = await meetupEventsContainer.DeleteItemAsync<MeetupEvent>(meetup.Id, new PartitionKey(meetup.Id));
+
+                            _logger.LogWarning(20100, $"A meetup was deleted : {meetup.Title}");
                         }
                         catch (Exception ex)
                         {

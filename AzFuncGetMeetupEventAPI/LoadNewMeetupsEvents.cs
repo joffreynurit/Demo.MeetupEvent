@@ -197,6 +197,8 @@ namespace MeetupEventsAggregator.AzFunction
                     try
                     {
                         var upsertState = await meetupEventsContainer.UpsertItemAsync(meetupEvent);
+
+                        _logger.LogInformation(10600, $"Another meetup was added : {meetupEvent.Title}");
                     }
                     catch (Exception ex)
                     {
