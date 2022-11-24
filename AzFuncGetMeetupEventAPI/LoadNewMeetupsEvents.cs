@@ -40,6 +40,12 @@ namespace MeetupEventsAggregator.AzFunction
                 throw new ArgumentNullException(nameof(myTimer));
             }
 
+            //Hearth for this worker
+            using (HttpClient client = new HttpClient())
+            {
+                await client.GetStringAsync("https://betteruptime.com/api/v1/heartbeat/7Lphvkr1YbHyxoUWA9hdyZc4");
+            }
+
             try
             {
                 using CosmosClient client = new(
